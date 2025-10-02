@@ -1,1 +1,473 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canoe Slalom Results Searcher</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+        }
+        .tab-button.active {
+            border-bottom: 2px solid #3b82f6;
+            color: #3b82f6;
+            font-weight: 600;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        details > summary {
+            list-style: none;
+        }
+        details > summary::-webkit-details-marker {
+            display: none;
+        }
+        details > summary::before {
+            content: '+';
+            margin-right: 0.5rem;
+        }
+        details[open] > summary::before {
+            content: '-';
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="mb-8 flex items-center justify-between">
+            <img src="https://raw.githubusercontent.com/NickPez36/BTB_CSL_ResultsSearcher/main/assets/Paddle%20Aus%20Logo.png" alt="Paddle Australia Logo" class="h-12 md:h-16">
+            <div class="text-center">
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Canoe Slalom Results Searcher</h1>
+                <p class="text-gray-600 mt-2">Historical results at your fingertips for media releases.</p>
+            </div>
+            <img src="https://raw.githubusercontent.com/NickPez36/BTB_CSL_ResultsSearcher/main/assets/BTB_Logo.png" alt="Behind the Bib Logo" class="h-12 md:h-16">
+        </header>
+
+        <!-- Tab Controls -->
+        <div class="mb-6 border-b border-gray-300">
+            <nav class="flex space-x-4" aria-label="Tabs">
+                <button id="athleteTabButton" class="tab-button active py-4 px-1 text-sm font-medium text-gray-500 hover:text-blue-600" onclick="switchTab('athlete')">Athlete Search</button>
+                <button id="nationTabButton" class="tab-button py-4 px-1 text-sm font-medium text-gray-500 hover:text-blue-600" onclick="switchTab('nation')">Nation Search</button>
+            </nav>
+        </div>
+        
+        <main>
+            <!-- Loading Indicator -->
+            <div id="loader" class="flex flex-col items-center justify-center h-64">
+                <div class="loader"></div>
+                <p class="mt-4 text-gray-600">Fetching results data...</p>
+            </div>
+
+            <!-- Error Message -->
+            <div id="errorMessage" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative" role="alert">
+                <strong class="font-bold">Error:</strong>
+                <span class="block sm:inline" id="errorText"></span>
+            </div>
+
+            <!-- Athlete Search Tab Content -->
+            <div id="athleteTab" class="hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-6 bg-white rounded-lg shadow-md">
+                    <div class="flex flex-col">
+                        <label for="athleteClass" class="mb-2 font-semibold text-gray-700">Class:</label>
+                        <select id="athleteClass" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"></select>
+                    </div>
+                     <div class="flex flex-col">
+                        <label for="athleteNation" class="mb-2 font-semibold text-gray-700">Nation:</label>
+                        <select id="athleteNation" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"></select>
+                    </div>
+                    <div class="flex flex-col">
+                        <label for="athleteNameSelect" class="mb-2 font-semibold text-gray-700">Athlete Name:</label>
+                        <select id="athleteNameSelect" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"></select>
+                    </div>
+                    <div class="flex items-end">
+                        <button id="searchAthlete" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-300">Search Athlete</button>
+                    </div>
+                </div>
+                <div id="athleteResults" class="hidden"></div>
+            </div>
+
+            <!-- Nation Search Tab Content -->
+            <div id="nationTab" class="hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-6 bg-white rounded-lg shadow-md">
+                    <div class="flex flex-col">
+                        <label for="nationClass" class="mb-2 font-semibold text-gray-700">Class:</label>
+                        <select id="nationClass" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"></select>
+                    </div>
+                    <div class="flex flex-col">
+                        <label for="nationSelect" class="mb-2 font-semibold text-gray-700">Nation:</label>
+                        <select id="nationSelect" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"></select>
+                    </div>
+                    <div class="flex items-end">
+                        <button id="searchNation" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-300">Search Nation</button>
+                    </div>
+                </div>
+                <div id="nationResults" class="hidden"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const dataUrl = 'https://raw.githubusercontent.com/NickPez36/BTB_CSL_ResultsSearcher/main/data/canoe_slalom_overall_ranks.csv';
+        let fullData = [];
+
+        // UI Elements
+        const loader = document.getElementById('loader');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        const athleteTab = document.getElementById('athleteTab');
+        const nationTab = document.getElementById('nationTab');
+        const athleteTabButton = document.getElementById('athleteTabButton');
+        const nationTabButton = document.getElementById('nationTabButton');
+        
+        const athleteClassSelect = document.getElementById('athleteClass');
+        const athleteNationSelect = document.getElementById('athleteNation');
+        const athleteNameSelect = document.getElementById('athleteNameSelect');
+        const searchAthleteBtn = document.getElementById('searchAthlete');
+        const athleteResultsContainer = document.getElementById('athleteResults');
+
+        const nationClassSelect = document.getElementById('nationClass');
+        const nationSelect = document.getElementById('nationSelect');
+        const searchNationBtn = document.getElementById('searchNation');
+        const nationResultsContainer = document.getElementById('nationResults');
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchData();
+            searchAthleteBtn.addEventListener('click', searchAthlete);
+            searchNationBtn.addEventListener('click', searchNation);
+            athleteClassSelect.addEventListener('change', updateAthleteNameFilter);
+            athleteNationSelect.addEventListener('change', updateAthleteNameFilter);
+        });
+
+        async function fetchData() {
+            athleteTab.classList.add('hidden');
+            nationTab.classList.add('hidden');
+            loader.classList.remove('hidden');
+            try {
+                const response = await fetch(dataUrl);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const csvText = await response.text();
+                fullData = parseCSV(csvText);
+                populateFilters();
+                switchTab('athlete'); // Show first tab after data loads
+            } catch (e) {
+                console.error("Failed to fetch or parse data:", e);
+                showError("Could not load results data. Please check the data source and your internet connection.");
+            } finally {
+                loader.classList.add('hidden');
+            }
+        }
+        
+        function toProperCase(str) {
+            if (!str) return '';
+            return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+        }
+
+        function parseCSV(text) {
+            const lines = text.trim().replace(/\r/g, '').split('\n');
+            const headers = lines[0].split(',').map(h => h.trim());
+            const data = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i];
+                if (!line.trim()) continue;
+
+                // Regex to split CSV by commas, but not those inside quotes
+                const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                
+                if (values.length !== headers.length) {
+                    console.warn(`Malformed CSV row #${i + 1}: Expected ${headers.length} columns, found ${values.length}. Skipping.`, line);
+                    continue;
+                }
+
+                const obj = {};
+                headers.forEach((header, index) => {
+                    let value = (values[index] || '').trim().replace(/^"|"$/g, ''); // Trim and remove surrounding quotes
+
+                    if (header === "Overall Rank" || header === "Year") {
+                        obj[header] = parseInt(value, 10) || null;
+                    } else if (header === 'Athlete Name') {
+                        obj[header] = toProperCase(value);
+                    } else {
+                        obj[header] = value;
+                    }
+                });
+                data.push(obj);
+            }
+            return data.filter(row => row.Year); // Ensure row has a year
+        }
+
+        function populateFilters() {
+            const classes = [...new Set(fullData.map(row => row.Class))].sort();
+            const nations = [...new Set(fullData.map(row => row.Nation))].sort();
+
+            const classOptions = classes.map(c => `<option value="${c}">${c}</option>`).join('');
+            athleteClassSelect.innerHTML = classOptions;
+            nationClassSelect.innerHTML = classOptions;
+
+            const nationOptions = nations.map(n => `<option value="${n}">${n}</option>`).join('');
+            nationSelect.innerHTML = nationOptions;
+            athleteNationSelect.innerHTML = nationOptions;
+            
+            updateAthleteNameFilter(); // Initial population of athlete names
+        }
+
+        function updateAthleteNameFilter() {
+            const selectedClass = athleteClassSelect.value;
+            const selectedNation = athleteNationSelect.value;
+            
+            const athletes = [...new Set(
+                fullData
+                    .filter(row => row.Class === selectedClass && row.Nation === selectedNation && row['Athlete Name'])
+                    .map(row => row['Athlete Name'])
+            )].sort();
+            
+            if (athletes.length > 0) {
+                athleteNameSelect.innerHTML = athletes.map(a => `<option value="${a}">${a}</option>`).join('');
+            } else {
+                athleteNameSelect.innerHTML = '<option value="">No athletes found</option>';
+            }
+        }
+        
+        // --- Tab Switching Logic ---
+        function switchTab(tabName) {
+            if (tabName === 'athlete') {
+                athleteTab.classList.remove('hidden');
+                nationTab.classList.add('hidden');
+                athleteTabButton.classList.add('active');
+                nationTabButton.classList.remove('active');
+            } else {
+                athleteTab.classList.add('hidden');
+                nationTab.classList.remove('hidden');
+                athleteTabButton.classList.remove('active');
+                nationTabButton.classList.add('active');
+            }
+        }
+
+        // --- Feature 1: Athlete Search ---
+        function searchAthlete() {
+            const selectedClass = athleteClassSelect.value;
+            const athleteName = athleteNameSelect.value;
+
+            if (!athleteName) {
+                showError("Please select an athlete.", athleteResultsContainer);
+                return;
+            }
+
+            const athleteClassData = fullData
+                .filter(row => row['Athlete Name'] === athleteName && row.Class === selectedClass);
+            
+            // De-duplication logic
+            const uniqueResults = {};
+            athleteClassData.forEach(row => {
+                // Create a unique key for each competition entry
+                const key = `${row.Year}-${row.Competition}-${row.Location}`;
+                if (!uniqueResults[key]) {
+                    uniqueResults[key] = row;
+                }
+            });
+
+            const results = Object.values(uniqueResults).sort((a, b) => b.Year - a.Year);
+
+            displayAthleteResults(results, athleteName, selectedClass);
+        }
+
+        function displayAthleteResults(results, name, className) {
+            athleteResultsContainer.classList.remove('hidden');
+            
+            if (results.length === 0) {
+                athleteResultsContainer.innerHTML = `
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h2 class="text-2xl font-bold mb-2">No Results Found</h2>
+                        <p>No results found for ${name} in the ${className} class.</p>
+                    </div>`;
+                return;
+            }
+
+            const summary = calculateSummary(results);
+            const summaryHTML = createSummaryHTML(`${name} - ${className} Summary`, summary);
+            const tableHTML = createCollapsibleResults(results, false);
+            athleteResultsContainer.innerHTML = summaryHTML + tableHTML;
+        }
+
+
+        // --- Feature 2: Nation Search ---
+        function searchNation() {
+            const selectedClass = nationClassSelect.value;
+            const selectedNation = nationSelect.value;
+            const nationClassData = fullData.filter(row => row.Nation === selectedNation && row.Class === selectedClass);
+
+            const bestResultsPerCompetition = {};
+            nationClassData.forEach(row => {
+                const key = `${row.Year}-${row.Competition}-${row.Location}`;
+                const existingBest = bestResultsPerCompetition[key];
+                
+                // If no result for this competition yet, or current result is better, update
+                if (!existingBest || (row['Overall Rank'] && row['Overall Rank'] < existingBest['Overall Rank'])) {
+                    bestResultsPerCompetition[key] = row;
+                }
+            });
+
+            const results = Object.values(bestResultsPerCompetition).sort((a, b) => b.Year - a.Year);
+            displayNationResults(results, selectedNation, selectedClass);
+        }
+        
+        function displayNationResults(results, nation, className) {
+            nationResultsContainer.classList.remove('hidden');
+            
+            if (results.length === 0) {
+                nationResultsContainer.innerHTML = `
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h2 class="text-2xl font-bold mb-2">No Results Found</h2>
+                        <p>No results found for ${nation} in the ${className} class.</p>
+                    </div>`;
+                return;
+            }
+
+            const summary = calculateSummary(results);
+            const summaryHTML = createSummaryHTML(`${nation} - ${className} Summary (Best National Results)`, summary);
+            const tableHTML = createCollapsibleResults(results, true);
+            nationResultsContainer.innerHTML = summaryHTML + tableHTML;
+        }
+
+        // --- Helper Functions ---
+        function calculateSummary(results) {
+             const getResultInfo = (result) => {
+                if (!result || !result['Overall Rank']) return { rank: 'N/A', details: 'Not Available' };
+                return {
+                    rank: result['Overall Rank'],
+                    details: `${result.Competition} in ${result.Location}, ${result.Year}`
+                };
+            };
+            
+            const bestResult = results.reduce((best, current) => {
+                if (!current || !current['Overall Rank']) return best;
+                if (!best) return current;
+
+                // If current result is better, it's the new best
+                if (current['Overall Rank'] < best['Overall Rank']) {
+                    return current;
+                }
+                // If ranks are tied, take the most recent year
+                if (current['Overall Rank'] === best['Overall Rank'] && current.Year > best.Year) {
+                    return current;
+                }
+                // Otherwise, keep the existing best
+                return best;
+            }, null);
+
+            // Results are pre-sorted by Year descending for 'last' calculations
+            const lastMedalResult = results.find(r => r['Overall Rank'] <= 3);
+            const lastTop5Result = results.find(r => r['Overall Rank'] <= 5);
+            const lastTop10Result = results.find(r => r['Overall Rank'] <= 10);
+            
+            return {
+                best: getResultInfo(bestResult),
+                lastMedal: getResultInfo(lastMedalResult),
+                lastTop5: getResultInfo(lastTop5Result),
+                lastTop10: getResultInfo(lastTop10Result),
+            };
+        }
+        
+        function createSummaryHTML(title, summary) {
+            return `
+                <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-800">${title}</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
+                        ${createSummaryCard('Best Result', summary.best.rank, summary.best.details)}
+                        ${createSummaryCard('Last Medal', summary.lastMedal.rank, summary.lastMedal.details)}
+                        ${createSummaryCard('Last Top 5', summary.lastTop5.rank, summary.lastTop5.details)}
+                        ${createSummaryCard('Last Top 10', summary.lastTop10.rank, summary.lastTop10.details)}
+                    </div>
+                </div>
+            `;
+        }
+
+        function createSummaryCard(title, rank, details) {
+            const rankColor = rank <= 3 ? 'text-green-500' : (rank <=10 ? 'text-yellow-500' : 'text-gray-700');
+            return `
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <h4 class="font-semibold text-gray-600 text-sm">${title}</h4>
+                    <p class="text-3xl font-bold ${rankColor}">${rank || 'N/A'}</p>
+                    <p class="text-xs text-gray-500">${details}</p>
+                </div>
+            `;
+        }
+
+        function createCollapsibleResults(results, isNationSearch = false) {
+            if (results.length === 0) return '';
+            const resultsByYear = results.reduce((acc, row) => {
+                const year = row.Year;
+                if (!acc[year]) acc[year] = [];
+                acc[year].push(row);
+                return acc;
+            }, {});
+
+            const years = Object.keys(resultsByYear).sort((a, b) => b - a);
+            let html = '';
+            
+            years.forEach((year, index) => {
+                const yearResults = resultsByYear[year];
+                const tableHeaders = isNationSearch 
+                    ? ['Competition', 'Location', 'Best Rank', 'Athlete']
+                    : ['Competition', 'Location', 'Overall Rank'];
+                
+                const tableRows = yearResults.map(row => `
+                    <tr class="border-b last:border-b-0 hover:bg-gray-50">
+                        <td class="py-3 px-4">${row.Competition}</td>
+                        <td class="py-3 px-4">${row.Location}</td>
+                        <td class="py-3 px-4 font-semibold">${row['Overall Rank'] || 'N/A'}</td>
+                        ${isNationSearch ? `<td class="py-3 px-4">${row['Athlete Name']}</td>` : ''}
+                    </tr>`).join('');
+
+                const tableHTML = `
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left mt-2 text-sm">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    ${tableHeaders.map(h => `<th class="py-2 px-4 font-semibold">${h}</th>`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody>${tableRows}</tbody>
+                        </table>
+                    </div>`;
+
+                const isOpen = index === 0 ? 'open' : '';
+                html += `
+                    <details class="bg-white p-4 rounded-lg shadow-sm mb-2" ${isOpen}>
+                        <summary class="font-bold text-lg cursor-pointer">${year} Results</summary>
+                        ${tableHTML}
+                    </details>`;
+            });
+            
+            return `<div class="mt-6"><h3 class="text-xl font-bold mb-4">Detailed Historical Results</h3>${html}</div>`;
+        }
+        
+        function showError(message, container = null) {
+            if (container) {
+                container.classList.remove('hidden');
+                container.innerHTML = `<div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-lg" role="alert">${message}</div>`;
+            } else {
+                 errorText.textContent = message;
+                 errorMessage.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
+
